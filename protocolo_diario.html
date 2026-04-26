@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protocolo de Analisis Diario — SP500</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f4f4; color: #1a1a1a; font-size: 14px; }
+
+  .page { max-width: 860px; margin: 30px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+  /* HEADER */
+  .header { background: #1E293B; padding: 22px 30px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left h1 { color: #F0B429; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-left p { color: #94A3B8; font-size: 12px; margin-top: 4px; }
+  .header-right { display: flex; gap: 20px; }
+  .header-field { display: flex; flex-direction: column; align-items: flex-end; }
+  .header-field label { color: #64748B; font-size: 11px; margin-bottom: 4px; }
+  .header-field input { background: #0F172A; border: 1px solid #334155; border-radius: 5px; color: #E2E8F0; padding: 5px 10px; font-size: 13px; width: 160px; font-family: Arial; }
+
+  /* BLOCKS */
+  .block { margin: 20px; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }
+  .block-header { padding: 12px 18px; display: flex; align-items: center; gap: 12px; }
+  .block-header.pre { background: #1E3A5F; }
+  .block-header.post { background: #14532D; }
+  .block-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.5px; }
+  .tag-pre { background: #1D4ED8; color: #BFDBFE; }
+  .tag-post { background: #15803D; color: #BBF7D0; }
+  .block-title { color: white; font-size: 15px; font-weight: 600; }
+  .block-subtitle { color: #94A3B8; font-size: 12px; margin-left: auto; }
+
+  /* SECTIONS */
+  .section { border-top: 1px solid #F1F5F9; }
+  .section-title { background: #F8FAFC; padding: 8px 18px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; }
+
+  /* ROWS */
+  .field-row { display: flex; align-items: stretch; border-bottom: 1px solid #F1F5F9; }
+  .field-row:last-child { border-bottom: none; }
+  .field-label { background: #F8FAFC; padding: 10px 14px; min-width: 200px; max-width: 200px; font-size: 12px; font-weight: 600; color: #475569; display: flex; align-items: center; border-right: 1px solid #E2E8F0; }
+  .field-input { flex: 1; padding: 8px 12px; }
+  .field-input input, .field-input textarea { width: 100%; border: none; outline: none; font-family: Arial; font-size: 13px; color: #1E293B; background: transparent; resize: none; }
+  .field-input textarea { min-height: 38px; padding-top: 4px; }
+
+  /* CHECK ROWS */
+  .check-row { display: flex; align-items: stretch; border-bottom: 1px solid #F1F5F9; }
+  .check-row:last-child { border-bottom: none; }
+  .check-label { background: #F8FAFC; padding: 10px 14px; min-width: 200px; max-width: 200px; border-right: 1px solid #E2E8F0; display: flex; align-items: flex-start; gap: 8px; }
+  .check-label input[type=checkbox] { margin-top: 2px; accent-color: #F0B429; width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+  .check-label span { font-size: 12px; font-weight: 600; color: #334155; line-height: 1.4; }
+  .check-label small { font-size: 11px; color: #94A3B8; font-weight: 400; display: block; margin-top: 2px; }
+  .check-input { flex: 1; padding: 8px 12px; }
+  .check-input input { width: 100%; border: none; outline: none; font-family: Arial; font-size: 13px; color: #1E293B; background: transparent; }
+
+  /* TRIPLE ROW */
+  .triple-row { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #F1F5F9; }
+  .triple-cell { padding: 10px 14px; border-right: 1px solid #E2E8F0; }
+  .triple-cell:last-child { border-right: none; }
+  .triple-cell label { font-size: 11px; font-weight: 600; color: #64748B; display: block; margin-bottom: 5px; }
+  .triple-cell input { width: 100%; border: none; border-bottom: 1px solid #E2E8F0; outline: none; font-family: Arial; font-size: 13px; color: #1E293B; background: transparent; padding: 3px 0; }
+
+  /* DOUBLE ROW */
+  .double-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #F1F5F9; }
+  .double-cell { padding: 10px 14px; border-right: 1px solid #E2E8F0; }
+  .double-cell:last-child { border-right: none; }
+  .double-cell label { font-size: 11px; font-weight: 600; color: #64748B; display: block; margin-bottom: 5px; }
+  .double-cell input { width: 100%; border: none; border-bottom: 1px solid #E2E8F0; outline: none; font-family: Arial; font-size: 13px; color: #1E293B; background: transparent; padding: 3px 0; }
+
+  /* BIAS */
+  .bias-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; border-bottom: 1px solid #F1F5F9; }
+  .bias-btn { padding: 12px 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; border-right: 1px solid #E2E8F0; transition: all 0.15s; user-select: none; }
+  .bias-btn:last-child { border-right: none; }
+  .bias-btn input[type=radio] { display: none; }
+  .bias-btn.alcista { color: #166534; }
+  .bias-btn.bajista { color: #991B1B; }
+  .bias-btn.lateral { color: #854D0E; }
+  .bias-btn.sinSesgo { color: #475569; }
+  .bias-btn.alcista:has(input:checked), .bias-btn.alcista:hover { background: #DCFCE7; }
+  .bias-btn.bajista:has(input:checked), .bias-btn.bajista:hover { background: #FEE2E2; }
+  .bias-btn.lateral:has(input:checked), .bias-btn.lateral:hover { background: #FEF9C3; }
+  .bias-btn.sinSesgo:has(input:checked), .bias-btn.sinSesgo:hover { background: #F1F5F9; }
+
+  /* EMO */
+  .emo-row { display: flex; gap: 0; border-bottom: 1px solid #F1F5F9; align-items: center; }
+  .emo-label { background: #F8FAFC; padding: 10px 14px; min-width: 200px; font-size: 12px; font-weight: 600; color: #475569; border-right: 1px solid #E2E8F0; }
+  .emo-options { display: flex; gap: 8px; padding: 8px 14px; }
+  .emo-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #E2E8F0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: pointer; color: #64748B; transition: all 0.15s; user-select: none; }
+  .emo-btn input[type=radio] { display: none; }
+  .emo-btn:hover, .emo-btn:has(input:checked) { border-color: #F0B429; background: #FEF9C3; color: #854D0E; }
+
+  /* RESULT ROW */
+  .result-row { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #F1F5F9; }
+  .result-cell { padding: 10px 14px; border-right: 1px solid #E2E8F0; }
+  .result-cell:last-child { border-right: none; }
+  .result-cell label { font-size: 11px; font-weight: 600; color: #64748B; display: block; margin-bottom: 8px; }
+  .result-options { display: flex; gap: 6px; flex-wrap: wrap; }
+  .result-option { padding: 4px 10px; border-radius: 4px; border: 1px solid #E2E8F0; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .result-option input[type=radio] { display: none; }
+  .opt-si { color: #166534; }
+  .opt-par { color: #854D0E; }
+  .opt-no { color: #991B1B; }
+  .opt-si:has(input:checked), .opt-si:hover { background: #DCFCE7; border-color: #86EFAC; }
+  .opt-par:has(input:checked), .opt-par:hover { background: #FEF9C3; border-color: #FCD34D; }
+  .opt-no:has(input:checked), .opt-no:hover { background: #FEE2E2; border-color: #FCA5A5; }
+
+  /* FOOTER */
+  .footer { margin: 20px; padding: 12px 16px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0; }
+  .footer p { font-size: 11px; color: #94A3B8; line-height: 1.6; }
+  .footer strong { color: #64748B; }
+
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; margin: 0; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>PROTOCOLO DE ANALISIS DIARIO</h1>
+      <p>SP500 Intraday &nbsp;·&nbsp; Complétalo antes de la primera operacion</p>
+    </div>
+    <div class="header-right">
+      <div class="header-field">
+        <label>Fecha</label>
+        <input type="date">
+      </div>
+      <div class="header-field">
+        <label>Semana</label>
+        <input type="text" placeholder="Semana 1 de 2">
+      </div>
+    </div>
+  </div>
+
+  <!-- PRE-MERCADO -->
+  <div class="block">
+    <div class="block-header pre">
+      <span class="block-tag tag-pre">PRE-MERCADO</span>
+      <span class="block-title">Analisis antes de operar</span>
+      <span class="block-subtitle">Completar antes de las 15:00h</span>
+    </div>
+
+    <!-- 1. Sesiones previas -->
+    <div class="section">
+      <div class="section-title">1. Sesiones previas</div>
+      <div class="triple-row">
+        <div class="triple-cell">
+          <label>Asia — direccion y movimiento</label>
+          <input type="text" placeholder="ej: Bajista -0.8%">
+        </div>
+        <div class="triple-cell">
+          <label>Europa — direccion y movimiento</label>
+          <input type="text" placeholder="ej: Lateral, rebote leve">
+        </div>
+        <div class="triple-cell">
+          <label>Futuros SP500 pre-mercado</label>
+          <input type="text" placeholder="ej: +0.3%, alcista">
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Macro -->
+    <div class="section">
+      <div class="section-title">2. Macro y noticias</div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Calendario economico<small>Fed, CPI, NFP, earnings, aranceles...</small></span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Eventos del dia..."></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Geopolitica y noticias</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Novedades relevantes..."></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Fontaneria de mercado<small>VIX, liquidez, repo, flujos inst.</small></span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="VIX, posicionamiento..."></div>
+      </div>
+    </div>
+
+    <!-- 3. Tecnico -->
+    <div class="section">
+      <div class="section-title">3. Analisis tecnico</div>
+      <div class="double-row">
+        <div class="double-cell">
+          <label>Soporte clave</label>
+          <input type="text" placeholder="ej: 5.180 — FVG semanal">
+        </div>
+        <div class="double-cell">
+          <label>Resistencia clave</label>
+          <input type="text" placeholder="ej: 5.240 — max sesion anterior">
+        </div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>FVGs e IFVGs activos identificados</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Zonas marcadas en grafico..."></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Medias moviles y Fibonacci en H1 y M15</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Niveles relevantes..."></div>
+      </div>
+    </div>
+
+    <!-- 4. Bias -->
+    <div class="section">
+      <div class="section-title">4. Bias del dia</div>
+      <div class="bias-row">
+        <label class="bias-btn alcista"><input type="radio" name="bias" value="alcista"> Alcista</label>
+        <label class="bias-btn bajista"><input type="radio" name="bias" value="bajista"> Bajista</label>
+        <label class="bias-btn lateral"><input type="radio" name="bias" value="lateral"> Lateral</label>
+        <label class="bias-btn sinSesgo"><input type="radio" name="bias" value="sinSesgo"> Sin sesgo</label>
+      </div>
+      <div class="field-row">
+        <div class="field-label">Condicion que invalida el bias</div>
+        <div class="field-input"><input type="text" placeholder="ej: Si pierde 5.180 no opero largo"></div>
+      </div>
+    </div>
+
+    <!-- 5. Plan -->
+    <div class="section">
+      <div class="section-title">5. Plan del dia</div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Setup que busco hoy</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="ej: Largo en pullback a FVG 5.185 en M15"></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Que evito hoy</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="ej: No operar 15 min antes/despues del evento macro"></div>
+      </div>
+      <div class="emo-row">
+        <div class="emo-label">Estado emocional pre</div>
+        <div class="emo-options">
+          <label class="emo-btn"><input type="radio" name="emo-pre" value="1">1</label>
+          <label class="emo-btn"><input type="radio" name="emo-pre" value="2">2</label>
+          <label class="emo-btn"><input type="radio" name="emo-pre" value="3">3</label>
+          <label class="emo-btn"><input type="radio" name="emo-pre" value="4">4</label>
+          <label class="emo-btn"><input type="radio" name="emo-pre" value="5">5</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-MERCADO -->
+  <div class="block">
+    <div class="block-header post">
+      <span class="block-tag tag-post">POST-MERCADO</span>
+      <span class="block-title">Revision al cierre</span>
+      <span class="block-subtitle">Maximo 15 minutos</span>
+    </div>
+
+    <!-- 6. Resultado -->
+    <div class="section">
+      <div class="section-title">6. Resultado del dia</div>
+      <div class="result-row">
+        <div class="result-cell">
+          <label>Bias cumplido</label>
+          <div class="result-options">
+            <label class="result-option opt-si"><input type="radio" name="bias-ok" value="si"> Si</label>
+            <label class="result-option opt-par"><input type="radio" name="bias-ok" value="par"> Parcial</label>
+            <label class="result-option opt-no"><input type="radio" name="bias-ok" value="no"> No</label>
+          </div>
+        </div>
+        <div class="result-cell">
+          <label>Segui el plan</label>
+          <div class="result-options">
+            <label class="result-option opt-si"><input type="radio" name="plan-ok" value="si"> Si</label>
+            <label class="result-option opt-no"><input type="radio" name="plan-ok" value="no"> No</label>
+          </div>
+        </div>
+        <div class="result-cell">
+          <label>Estado emocional post</label>
+          <div class="emo-options">
+            <label class="emo-btn"><input type="radio" name="emo-post" value="1">1</label>
+            <label class="emo-btn"><input type="radio" name="emo-post" value="2">2</label>
+            <label class="emo-btn"><input type="radio" name="emo-post" value="3">3</label>
+            <label class="emo-btn"><input type="radio" name="emo-post" value="4">4</label>
+            <label class="emo-btn"><input type="radio" name="emo-post" value="5">5</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Analisis post -->
+    <div class="section">
+      <div class="section-title">7. Analisis post</div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Que funciono del analisis</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Lo que predijiste correctamente..."></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Que fallo del analisis</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Lo que no anticipaste o salto mal..."></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>A mejorar manana</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Una frase concreta, sin excusas..."></div>
+      </div>
+      <div class="check-row">
+        <div class="check-label">
+          <input type="checkbox">
+          <span>Leccion clave del dia</span>
+        </div>
+        <div class="check-input"><input type="text" placeholder="Una sola frase que no quieres olvidar..."></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer" style="display: flex; justify-content: space-between; align-items: center;">
+    <p><strong>Como usar:</strong> Abre este archivo en Safari cada dia de operativa. Completa el PRE-MERCADO antes de las 15:00h y el POST-MERCADO al cerrar.</p>
+    <p style="flex-shrink: 0; margin-left: 20px; font-size: 11px; color: #CBD5E1; background: #1E293B; padding: 6px 12px; border-radius: 6px; white-space: nowrap; font-family: monospace;">⌘ + S &nbsp;para guardar</p>
+  </div>
+
+</div>
+<script>
+const DAY_KEY = 'protocolo_' + new Date().toISOString().slice(0,10);
+
+// Auto-save all inputs on change
+function saveData() {
+  const data = {};
+  document.querySelectorAll('input, textarea').forEach((el, i) => {
+    const key = el.name || el.type + '_' + i;
+    data[key] = el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value;
+  });
+  localStorage.setItem(DAY_KEY, JSON.stringify(data));
+}
+
+// Load saved data for today
+function loadData() {
+  const saved = localStorage.getItem(DAY_KEY);
+  if (!saved) return;
+  const data = JSON.parse(saved);
+  document.querySelectorAll('input, textarea').forEach((el, i) => {
+    const key = el.name || el.type + '_' + i;
+    if (data[key] !== undefined) {
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = data[key];
+      else el.value = data[key];
+    }
+  });
+}
+
+// Attach listeners
+document.querySelectorAll('input, textarea').forEach(el => {
+  el.addEventListener('change', saveData);
+  el.addEventListener('input', saveData);
+});
+
+// Load on start
+loadData();
+
+// Set today's date if empty
+const dateInput = document.querySelector('input[type=date]');
+if (dateInput && !dateInput.value) {
+  dateInput.value = new Date().toISOString().slice(0,10);
+  saveData();
+}
+</script>
+</body>
+</html>
